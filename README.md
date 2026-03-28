@@ -4,7 +4,7 @@
 [![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://www.docker.com/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![Part of HaulSync](https://img.shields.io/badge/HaulSync-Control%20Tower-FF6C47)]([(https://github.com/shafeehhecker/HaulSync)])
+[![Part of HaulSync](https://img.shields.io/badge/HaulSync-Control%20Tower-FF6C47)]((https://github.com/shafeehhecker/HaulSync))
 
 > **A self-hostable, source-agnostic Control Tower for logistics operations — monitor every shipment, detect disruptions early, and resolve exceptions before they become escalations.**
 
