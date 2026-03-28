@@ -369,8 +369,4 @@ git push origin feature/your-feature-name
 
 MIT License — see [LICENSE](LICENSE) for details.
 
----
 
-## 🙏 Acknowledgements
-
-Part of the HaulSync open-source logistics ecosystem. Built with ❤️ for the freight community.
