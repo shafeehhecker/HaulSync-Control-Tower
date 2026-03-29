@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-haulsync}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-haulsync}
+      POSTGRES_DB: ${POSTGRES_DB:-haulsync_ct}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-haulsync}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-haulsync}:${POSTGRES_PASSWORD:-haulsync}@postgres:5432/${POSTGRES_DB:-haulsync_ct}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      FRONTEND_URL: http://localhost:3002
+      PORT: 5002
+      NODE_ENV: ${NODE_ENV:-production}
+      HALT_THRESHOLD_MINUTES: ${HALT_THRESHOLD_MINUTES:-30}
+      DELAY_THRESHOLD_MINUTES: ${DELAY_THRESHOLD_MINUTES:-60}
+      SLA_BREACH_WARNING_MINUTES: ${SLA_BREACH_WARNING_MINUTES:-120}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+    ports:
+      - "5002:5002"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3002:80"
+
+volumes:
+  postgres_data:
