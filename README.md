@@ -369,4 +369,6 @@ git push origin feature/your-feature-name
 
 MIT License — see [LICENSE](LICENSE) for details.
 
-
+---
+##Vision
+Part of démocratising tech for logistics 
