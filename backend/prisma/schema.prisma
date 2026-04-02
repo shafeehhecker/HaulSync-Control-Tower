@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(OPERATOR)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  actions   Action[]
+  alerts    Alert[]
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  CONTROL_TOWER_MANAGER
+  OPERATOR
+  VIEWER
+}
+
+// ── Shipments ─────────────────────────────────────────────────────────────────
+model Shipment {
+  id            String   @id @default(uuid())
+  reference     String   @unique
+  source        String
+  sourceRef     String?
+  originName    String
+  originLat     Float?
+  originLng     Float?
+  destName      String
+  destLat       Float?
+  destLng       Float?
+  slaDeadline   DateTime?
+  transporterId String?
+  transporterName String?
+  vehicleId     String?
+  vehicleRegNo  String?
+  status        ShipmentStatus @default(IN_TRANSIT)
+  currentLat    Float?
+  currentLng    Float?
+  eta           DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  events      ShipmentEvent[]
+  exceptions  Exception[]
+}
+
+enum ShipmentStatus {
+  IN_TRANSIT
+  HALTED
+  DELAYED
+  DELIVERED
+  EXCEPTION
+}
+
+// ── ShipmentEvents (ingest log) ───────────────────────────────────────────────
+model ShipmentEvent {
+  id          String   @id @default(uuid())
+  shipmentId  String
+  source      String
+  sourceRef   String?
+  occurredAt  DateTime
+  statusCode  String
+  lat         Float?
+  lng         Float?
+  eta         DateTime?
+  odometer    Float?
+  message     String?
+  meta        Json?
+  createdAt   DateTime @default(now())
+
+  shipment    Shipment @relation(fields:[shipmentId], references:[id])
+}
+
+// ── Exceptions ────────────────────────────────────────────────────────────────
+model Exception {
+  id          String          @id @default(uuid())
+  shipmentId  String
+  type        ExceptionType
+  severity    Severity        @default(MEDIUM)
+  status      ExceptionStatus @default(OPEN)
+  description String?
+  raisedAt    DateTime        @default(now())
+  resolvedAt  DateTime?
+  updatedAt   DateTime        @updatedAt
+
+  shipment    Shipment  @relation(fields:[shipmentId], references:[id])
+  alerts      Alert[]
+  actions     Action[]
+}
+
+enum ExceptionType {
+  UNPLANNED_HALT
+  ROUTE_DEVIATION
+  DELAY_RISK
+  SLA_BREACH_RISK
+  NIGHT_DRIVING
+  GEOFENCE_VIOLATION
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ExceptionStatus {
+  OPEN
+  ACKNOWLEDGED
+  ESCALATED
+  RESOLVED
+}
+
+// ── Alerts ────────────────────────────────────────────────────────────────────
+model Alert {
+  id          String      @id @default(uuid())
+  exceptionId String
+  assignedTo  String?
+  role        Role
+  channel     Channel
+  status      AlertStatus @default(PENDING)
+  sentAt      DateTime    @default(now())
+  escalatedAt DateTime?
+  resolvedAt  DateTime?
+
+  exception   Exception @relation(fields:[exceptionId], references:[id])
+  user        User?     @relation(fields:[assignedTo], references:[id])
+}
+
+enum Channel {
+  IN_APP
+  EMAIL
+  WEBHOOK
+}
+
+enum AlertStatus {
+  PENDING
+  ACKNOWLEDGED
+  ESCALATED
+  RESOLVED
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+model Action {
+  id          String   @id @default(uuid())
+  exceptionId String
+  takenById   String
+  actionType  String
+  note        String?
+  takenAt     DateTime @default(now())
+  resolvedAt  DateTime?
+
+  exception   Exception @relation(fields:[exceptionId], references:[id])
+  takenBy     User      @relation(fields:[takenById], references:[id])
+}
+
+// ── Alert Rules ───────────────────────────────────────────────────────────────
+model AlertRule {
+  id                      String        @id @default(uuid())
+  exceptionType           ExceptionType
+  source                  String        @default("*")
+  triggerAfterMinutes     Int           @default(0)
+  notifyRoles             String[]
+  escalateAfterMinutes    Int           @default(60)
+  escalateToRoles         String[]
+  channels                String[]
+  autoResolveOnMovement   Boolean       @default(false)
+  active                  Boolean       @default(true)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+}
