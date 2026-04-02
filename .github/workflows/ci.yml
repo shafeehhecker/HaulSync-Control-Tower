@@ -7,26 +7,63 @@ on:
     branches: [main, master]
 
 jobs:
-  test:
-    name: Run Tests
+  # ── Frontend ────────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend – Install & Build
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
+    defaults:
+      run:
+        working-directory: frontend
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js ${{ matrix.node-version }}
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          node-version: 20.x
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Build (Vite)
+        run: npm run build
+        env:
+          # Vite requires VITE_ prefixed env vars at build time.
+          # Override the API base URL so the build doesn't fail without a real backend.
+          VITE_API_URL: http://localhost:5002
+
+  # ── Backend ─────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend – Install & Prisma Generate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      # ── Uncomment once you add a test runner (e.g. vitest / jest) ──────────
+      # - name: Run tests
+      #   run: npm test
+      #   env:
+      #     DATABASE_URL: postgresql://haulsync:haulsync@localhost:5432/haulsync_ct
+      #     JWT_SECRET: ci-test-secret
