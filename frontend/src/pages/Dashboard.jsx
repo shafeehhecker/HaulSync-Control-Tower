@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Truck, AlertTriangle, Bell, CheckCircle2,
   Clock, TrendingUp, Zap, Activity,
 } from 'lucide-react';
-import { StatCard, PageHeader, StatusBadge, LivePulse, TimelineEntry, SeverityDot } from '../components/common';
-import api from '../api/client';
+import { Link } from 'react-router-dom';
+import { StatCard, StatusBadge, LivePulse, TimelineEntry, SeverityDot } from '../components/common';
 
 const MOCK_STATS = {
   activeShipments: 142,
@@ -32,6 +32,24 @@ const MOCK_TIMELINE = [
   { time:'12:48', title:'SHP-8780 delivered on time', description:'POD captured — SLA met', color:'green' },
 ];
 
+const KPI_CONNECTIONS = {
+  activeShipments: { to: '/live', label: 'Live lanes and ETAs' },
+  exceptions: { to: '/exceptions', label: 'Investigate exceptions' },
+  pendingAlerts: { to: '/alerts', label: 'Review pending alerts' },
+  resolvedToday: { to: '/action-log', label: 'See resolved actions' },
+  slaAtRisk: { to: '/analytics', label: 'SLA risk breakdown' },
+  onTimeRate: { to: '/analytics', label: 'OTD trend analysis' },
+};
+
+const TIMELINE_CONNECTIONS = {
+  'halt auto-detected': '/exceptions',
+  'SLA breach risk raised': '/alerts',
+  'exception resolved': '/action-log',
+  'route deviation': '/exceptions',
+  'auto-escalated': '/alerts',
+  'delivered on time': '/analytics',
+};
+
 export default function Dashboard() {
   const [stats] = useState(MOCK_STATS);
 
@@ -47,12 +65,30 @@ export default function Dashboard() {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 stagger">
-        <StatCard label="Active Shipments"  value={stats.activeShipments} icon={Truck}         color="blue"   delta="↑ 8 vs yesterday" />
-        <StatCard label="Open Exceptions"   value={stats.exceptions}      icon={AlertTriangle}  color="red"    delta="3 high severity" pulse />
-        <StatCard label="Pending Alerts"    value={stats.pendingAlerts}   icon={Bell}           color="amber"  delta="4 escalated" />
-        <StatCard label="Resolved Today"    value={stats.resolvedToday}   icon={CheckCircle2}   color="green"  delta="avg 22 min TTR" />
-        <StatCard label="SLA at Risk"       value={stats.slaAtRisk}       icon={Clock}          color="orange" delta="within 2h window" />
-        <StatCard label="On-Time Rate"      value={stats.onTimeRate}      icon={TrendingUp}     color="teal"   delta="last 7 days" />
+        <Link to={KPI_CONNECTIONS.activeShipments.to} className="group block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70">
+          <StatCard label="Active Shipments"  value={stats.activeShipments} icon={Truck}         color="blue"   delta="↑ 8 vs yesterday" />
+          <p className="text-[11px] text-zinc-500 mt-1 px-1 group-hover:text-zinc-400 transition-colors">{KPI_CONNECTIONS.activeShipments.label} →</p>
+        </Link>
+        <Link to={KPI_CONNECTIONS.exceptions.to} className="group block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70">
+          <StatCard label="Open Exceptions"   value={stats.exceptions}      icon={AlertTriangle}  color="red"    delta="3 high severity" pulse />
+          <p className="text-[11px] text-zinc-500 mt-1 px-1 group-hover:text-zinc-400 transition-colors">{KPI_CONNECTIONS.exceptions.label} →</p>
+        </Link>
+        <Link to={KPI_CONNECTIONS.pendingAlerts.to} className="group block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70">
+          <StatCard label="Pending Alerts"    value={stats.pendingAlerts}   icon={Bell}           color="amber"  delta="4 escalated" />
+          <p className="text-[11px] text-zinc-500 mt-1 px-1 group-hover:text-zinc-400 transition-colors">{KPI_CONNECTIONS.pendingAlerts.label} →</p>
+        </Link>
+        <Link to={KPI_CONNECTIONS.resolvedToday.to} className="group block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70">
+          <StatCard label="Resolved Today"    value={stats.resolvedToday}   icon={CheckCircle2}   color="green"  delta="avg 22 min TTR" />
+          <p className="text-[11px] text-zinc-500 mt-1 px-1 group-hover:text-zinc-400 transition-colors">{KPI_CONNECTIONS.resolvedToday.label} →</p>
+        </Link>
+        <Link to={KPI_CONNECTIONS.slaAtRisk.to} className="group block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70">
+          <StatCard label="SLA at Risk"       value={stats.slaAtRisk}       icon={Clock}          color="orange" delta="within 2h window" />
+          <p className="text-[11px] text-zinc-500 mt-1 px-1 group-hover:text-zinc-400 transition-colors">{KPI_CONNECTIONS.slaAtRisk.label} →</p>
+        </Link>
+        <Link to={KPI_CONNECTIONS.onTimeRate.to} className="group block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70">
+          <StatCard label="On-Time Rate"      value={stats.onTimeRate}      icon={TrendingUp}     color="teal"   delta="last 7 days" />
+          <p className="text-[11px] text-zinc-500 mt-1 px-1 group-hover:text-zinc-400 transition-colors">{KPI_CONNECTIONS.onTimeRate.label} →</p>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -67,7 +103,7 @@ export default function Dashboard() {
           </div>
           <div className="divide-y divide-zinc-800/60">
             {MOCK_EXCEPTIONS.map((ex) => (
-              <div key={ex.id} className="flex items-center gap-4 px-5 py-3 hover:bg-zinc-900/40 transition-colors cursor-pointer">
+              <Link to="/exceptions" key={ex.id} className="flex items-center gap-4 px-5 py-3 hover:bg-zinc-900/40 transition-colors cursor-pointer">
                 <SeverityDot level={ex.severity} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -77,7 +113,7 @@ export default function Dashboard() {
                   <p className="text-sm text-zinc-300 mt-0.5 truncate">{ex.shipment} · {ex.transporter}</p>
                 </div>
                 <p className="text-xs text-zinc-500 flex-shrink-0">{ex.since}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -89,9 +125,14 @@ export default function Dashboard() {
             <h2 className="font-display font-semibold text-zinc-100 text-sm">Activity Feed</h2>
           </div>
           <div className="px-5 py-4">
-            {MOCK_TIMELINE.map((ev, i) => (
-              <TimelineEntry key={i} {...ev} last={i === MOCK_TIMELINE.length - 1} />
-            ))}
+            {MOCK_TIMELINE.map((ev, i) => {
+              const destination = Object.entries(TIMELINE_CONNECTIONS).find(([token]) => ev.title.includes(token))?.[1] || '/action-log';
+              return (
+                <Link key={i} to={destination} className="block rounded-xl hover:bg-zinc-900/40 transition-colors">
+                  <TimelineEntry {...ev} last={i === MOCK_TIMELINE.length - 1} />
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
