@@ -59,6 +59,7 @@ haulsync-control-tower/
 │       └── middleware/
 ├── docker-compose.yml
 └── .env.example
+|__docs/
 ```
 
 **Tech Stack** — identical to the HaulSync platform:
