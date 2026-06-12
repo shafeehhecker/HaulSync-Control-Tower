@@ -58,8 +58,8 @@ haulsync-control-tower/
 │       ├── routes/                  # One file per resource
 │       └── middleware/
 ├── docker-compose.yml
-└── .env.example
-|__docs/
+├──.env.example
+└── docs/
 ```
 
 **Tech Stack** — identical to the HaulSync platform:
