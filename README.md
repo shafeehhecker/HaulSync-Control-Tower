@@ -267,8 +267,7 @@ Supported channels: `IN_APP` (Socket.io), `EMAIL` (SMTP), `WEBHOOK` (HTTP POST).
 | `VIEWER` | Read-only dashboard |
 
 ---
-Shel moduel
-A shell module is need ASAP
+
 
 ## 📜 License
 
