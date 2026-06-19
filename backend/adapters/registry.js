@@ -26,6 +26,7 @@ registry.set('*',       genericAdapter); // fallback
 
 // Register source-specific adapters when env vars are present:
 // if (process.env.HAULSYNC_FTL_URL) registry.set('haulsync-ftl', haulsyncFtlAdapter);
+//else if release notes
 
 /**
  * Resolve the adapter for a given source identifier.
