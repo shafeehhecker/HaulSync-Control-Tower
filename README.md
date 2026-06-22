@@ -17,9 +17,9 @@ Part of the HaulSync open-source logistics ecosystem. Consistent design system w
 |--------|-------|-------------|
 | 🟢 **Command Center** | `/` | KPI overview, live exception feed, activity timeline |
 | 🔵 **Live Operations** | `/live` | Real-time filterable shipment table across all sources |
-| 🔴 **Exceptions** | `/exceptions` | Disruption detection, severity triage, action modal |
+| 🔴 **Exceptions** | `/exceptions` | Disruption detection, severity triage, action modal with live notes thread |
 | 🟡 **Alerts** | `/alerts` | Notification routing, escalation tracking, acknowledge |
-| 🟣 **Action Log** | `/action-log` | Full audit trail with ownership and timestamps |
+| 🟣 **Action Log** | `/action-log` | Full audit trail — actions and notes merged into a chronological timeline per exception |
 | 📊 **Analytics** | `/analytics` | Exception trends, type breakdown, transporter scoring |
 | ⚙️ **Alert Rules** | `/rules` | Rule-based notification configuration per exception type |
 | 👥 **Users** | `/users` | Role-based access management |
@@ -35,13 +35,17 @@ haulsync-control-tower/
 │       ├── components/
 │       │   ├── Layout/Layout.jsx    # CT sidebar — consistent with HaulSync family
 │       │   └── common/index.jsx     # Shared component library (StatCard, Table, Btn…)
-│       ├── pages/                   # One folder per route
+│       ├── pages/
+│       │   ├── Exceptions/          # Action modal with two-column action + notes layout
+│       │   ├── ActionLog/           # Real-time log with full timeline drawer per exception
+│       │   └── …                   # One folder per route
 │       ├── context/AuthContext.jsx
 │       └── api/client.js            # Axios + JWT interceptor
 ├── backend/                         # Node.js 18 + Express + Prisma (port 5002)
 │   ├── prisma/
-│   │   ├── schema.prisma            # Full data model
-│   │   └── seed.js                  # Default users + alert rules
+│   │   ├── schema.prisma            # Full data model — includes ActionNote
+│   │   ├── seed.js                  # Default users + alert rules
+│   │   └── migrations/              # SQL migration history
 │   └── src/
 │       ├── adapters/                # Source adapter pattern
 │       │   ├── ISourceAdapter.js    # Interface — implement to add any source
@@ -54,7 +58,8 @@ haulsync-control-tower/
 │       ├── routes/                  # One file per resource
 │       └── middleware/
 ├── docker-compose.yml
-└── .env.example
+├──.env.example
+└── docs/
 ```
 
 **Tech Stack** — identical to the HaulSync platform:
@@ -113,6 +118,62 @@ npm run dev                   # http://localhost:5002
 cd frontend
 npm install
 npm run dev                   # http://localhost:3002
+```
+
+---
+
+## 📝 Operator Notes & Detailed Log
+
+### Notes on exceptions
+
+Operators can attach freeform notes to any open exception directly from the Exceptions page — no action type required. Notes are designed for quick in-context comms: driver callbacks, status updates, coordination between shifts, or anything that needs to be visible to the next person picking up the exception.
+
+Open an exception → **Take Action** → the right-hand panel shows the live notes thread. Hit Enter to post (Shift+Enter for a new line). Notes are timestamped, attributed by name and role, and visible to everyone with access to that exception.
+
+### Full exception log
+
+Every exception carries a complete merged timeline of all formal actions and freeform notes, sorted chronologically. Access it from the Action Log page via the **Full log →** button on any row. The drawer shows:
+
+- Who took what action, when, and any note attached to it
+- All freeform notes in sequence between actions
+- Author role badges so shift handovers are immediately clear
+- Whether an action marked the exception as resolved
+
+### API endpoints
+
+| Method | Endpoint | Description | Min. role |
+|--------|----------|-------------|-----------|
+| `GET` | `/api/actions` | Paginated audit log with shipment reference | Any |
+| `POST` | `/api/actions` | Log a formal action on an exception | OPERATOR |
+| `GET` | `/api/actions/notes?exceptionId=` | Fetch notes thread for an exception | Any |
+| `POST` | `/api/actions/notes` | Add a freeform note to an exception | OPERATOR |
+| `GET` | `/api/actions/log/:exceptionId` | Full merged timeline (actions + notes) | Any |
+
+### Data model
+
+```prisma
+model ActionNote {
+  id          String   @id @default(uuid())
+  exceptionId String
+  authorId    String
+  body        String
+  createdAt   DateTime @default(now())
+
+  exception   Exception @relation(fields:[exceptionId], references:[id])
+  author      User      @relation(fields:[authorId], references:[id])
+}
+```
+
+### Migration
+
+If upgrading an existing deployment, apply the `ActionNote` migration before restarting:
+
+```bash
+# Production
+npx prisma migrate deploy
+
+# Development
+npx prisma migrate dev --name add_action_notes
 ```
 
 ---
@@ -202,10 +263,11 @@ Supported channels: `IN_APP` (Socket.io), `EMAIL` (SMTP), `WEBHOOK` (HTTP POST).
 | `SUPER_ADMIN` | Full access including user deletion and system config |
 | `ADMIN` | All operations except user deletion |
 | `CONTROL_TOWER_MANAGER` | Monitor, manage exceptions, configure rules |
-| `OPERATOR` | Acknowledge alerts, log actions |
+| `OPERATOR` | Acknowledge alerts, log actions, add notes |
 | `VIEWER` | Read-only dashboard |
 
 ---
+
 
 ## 📜 License
 
